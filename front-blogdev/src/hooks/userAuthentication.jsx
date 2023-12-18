@@ -4,19 +4,26 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   updateProfile,
-  onAuthStateChanged,
   signOut,
 } from "firebase/auth";
 import { useState, useEffect } from "react";
 
 export const userAuthentication = () => {
   const [error, setError] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(null);
+  const [cancelled, setCancelled] = useState(false);
 
   const auth = getAuth();
 
+  function checkIfIsCancelled() {
+    if (cancelled) {
+      return;
+    }
+  }
+
   async function createUser(data) {
+    checkIfIsCancelled();
+
     setLoading(true);
     setError(null);
 
@@ -32,63 +39,69 @@ export const userAuthentication = () => {
       });
 
       setLoading(false);
-      setUser(user);
 
       return user;
     } catch (error) {
       console.error(error.message);
+      console.table(typeof error.message);
+
+      let systemErrorMessage;
+
+      if (error.message.includes("Password")) {
+        systemErrorMessage = "A senha precisa conter pelo menos 6 caracteres";
+      } else if (error.message.includes("email-already")) {
+        systemErrorMessage = "E-mail já cadastrado";
+      } else {
+        systemErrorMessage = "Ocorreu um error, tente novamente mais tarde";
+      }
       setLoading(false);
-      setError("Ocorreu um erro ao criar o usuário.");
+      setError(systemErrorMessage);
     }
   }
 
-  async function loginUser(credentials) {
+  const logout = () => {
+    checkIfIsCancelled();
+    signOut(auth);
+  };
+
+  const login = async (data) => {
+    checkIfIsCancelled();
     setLoading(true);
-    setError(null);
+    setError(false);
 
     try {
-      const { user } = await signInWithEmailAndPassword(
-        auth,
-        credentials.email,
-        credentials.password
-      );
-
+      await signInWithEmailAndPassword(auth, data.email, data.password);
       setLoading(false);
-      setUser(user);
-
-      return user;
     } catch (error) {
       console.error(error.message);
-      setLoading(false);
-      setError("E-mail ou senha incorretos.");
-    }
-  }
+      console.table(typeof error.message);
 
-  async function logoutUser() {
-    try {
-      await signOut(auth);
-      setUser(null);
-    } catch (error) {
-      console.error(error.message);
+      let systemErrorMessage;
+
+      if (error.message.includes("invalid-login-credentials")) {
+        systemErrorMessage = "Este usuário não está cadastrado";
+      } else if (error.message.includes("wrong-password")) {
+        systemErrorMessage = "Há erro com suas credenciais";
+      } else {
+        systemErrorMessage = "Ocorreu um erro, tente novamente mais tarde";
+      }
+      setLoading(false);
+      setError(systemErrorMessage);
     }
-  }
+  };
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setLoading(false);
-      setUser(user);
-    });
-
-    return () => unsubscribe();
-  }, [auth]);
+    return () => {
+      setCancelled(true);
+    };
+  }, []);
 
   return {
     auth,
-    user,
     createUser,
-    loginUser,
-    logoutUser,
     error,
     loading,
+    logout,
+    login,
   };
 };

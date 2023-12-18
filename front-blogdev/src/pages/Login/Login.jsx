@@ -1,92 +1,68 @@
-import React, { useState, useEffect } from "react";
-import { userAuthentication } from "../../hooks/userAuthentication";
+import React from "react";
 import styles from "./Login.module.css";
+import { useState, useEffect } from "react";
+import { userAuthentication } from "../../hooks/userAuthentication";
 import { useNavigate } from "react-router-dom";
 
-const LogoutMessage = ({ onLogout }) => {
-  useEffect(() => {
-    const timeout = setTimeout(() => {
-      onLogout();
-    }, 3000);
-
-    return () => clearTimeout(timeout);
-  }, [onLogout]);
-
-  return (
-    <div className={styles.logoutMessage}>
-      <p>Você foi desconectado com sucesso.</p>
-    </div>
-  );
-};
-
 const Login = () => {
+  //#region Controller Service
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const [showLogoutMessage, setShowLogoutMessage] = useState(false);
-  const {
-    loginUser,
-    error: authError,
-    loading,
-    user,
-    logoutUser,
-  } = userAuthentication();
+
+  const { login, error: authError, loading } = userAuthentication();
   const navigate = useNavigate();
 
-  const handleLogin = async (e) => {
+  const handlerSubmit = async (e) => {
     e.preventDefault();
     setError("");
-
-    const userCredentials = {
+    const user = {
       email,
       password,
     };
 
-    const loginSuccess = await loginUser(userCredentials);
+    const res = await login(user);
 
-    if (loginSuccess) {
-      console.log("Login realizado com sucesso.");
-      setShowLogoutMessage(false);
+    console.table(res);
+    navigate("/post/create");
+  };
+  //#endregion
 
-      navigate("/");
-    } else {
-      setError("Email ou senha inválido.");
+  useEffect(() => {
+    if (authError) {
+      setError(authError);
     }
-  };
-
-  const handleLogout = () => {
-    setShowLogoutMessage(true);
-
-    setTimeout(() => {
-      logoutUser();
-      navigate("/");
-    }, 3000);
-  };
+  }, [authError]);
 
   return (
     <div className={styles.login}>
-      <h1>Login</h1>
-
-      <form onSubmit={handleLogin}>
+      <h1>Entrar no BlogDev</h1>
+      <p>Entre no ambiente do BlogDev e comece a compartilhar suas ideias!</p>
+      <form onSubmit={handlerSubmit}>
         <label>
-          <span>Email: </span>
+          <span>E-mail: </span>
           <input
             type="email"
+            name="email"
+            required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="Digite seu email"
-          />
+            placeholder="Entre com seu e-mail"
+          ></input>
         </label>
         <label>
           <span>Senha: </span>
           <input
             type="password"
+            name="password"
+            required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            placeholder="Digite sua senha"
-          />
+            placeholder="Entre com sua senha"
+          ></input>
         </label>
-        {!loading && <button className="btn">Login</button>}
+
+        <button className="btn">Login</button>
         {loading && (
           <button className="btn" disabled>
             Aguarde...
@@ -94,17 +70,6 @@ const Login = () => {
         )}
         {error && <p className="error">{error}</p>}
       </form>
-      {user && (
-        <div className={styles.login}>
-          <p>Você está logado como: {user.email}</p>
-          <button className="btn" onClick={handleLogout}>
-            Logout
-          </button>
-        </div>
-      )}
-      {showLogoutMessage && (
-        <LogoutMessage onLogout={() => setShowLogoutMessage(false)} />
-      )}
     </div>
   );
 };

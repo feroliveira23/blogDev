@@ -1,9 +1,9 @@
 import React from "react";
 import { useState, useEffect } from "react";
 import { userAuthentication } from "../../hooks/userAuthentication";
-import styles from "./Register.module.css";
 
 const Register = () => {
+  //#region Controller Service
   const [displayName, setDisplayName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -30,9 +30,11 @@ const Register = () => {
 
     console.table(res);
   };
+  //#endregion
 
+  //#region View Browser Page
   return (
-    <div className={styles.register}>
+    <div>
       <h1>Compartilhe suas experiências com outros nomades</h1>
       <form onSubmit={handlerSubmit}>
         <label>
@@ -43,7 +45,7 @@ const Register = () => {
             required
             value={displayName}
             onChange={(e) => setDisplayName(e.target.value)}
-            placeholder="Entre com seu nomade nome"
+            placeholder="Entre con seu nomade nome"
           ></input>
         </label>
         <label>
@@ -79,11 +81,17 @@ const Register = () => {
             placeholder="Entre com sua senha"
           ></input>
         </label>
-        <button className="btn">Cadastrar</button>
+        {!loading && <button className="btn">Cadastrar</button>}
+        {loading && (
+          <button className="btn" disabled>
+            Aguarde...
+          </button>
+        )}
         {error && <p className="error">{error}</p>}
       </form>
     </div>
   );
+  //#endregion
 };
 
 export default Register;

@@ -1,42 +1,63 @@
 import "./App.css";
-import React, { useEffect, useState } from "react";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Navbar from "./components/Navbar";
-import Footer from "./components/Footer";
+import { BrowserRouter, Routes, Route, Navigate, Form } from "react-router-dom";
+import { AuthProvider } from "./context/AuthContext";
+import { onAuthStateChanged } from "firebase/auth";
+import { useState, useEffect } from "react";
+import { userAuthentication } from "./hooks/userAuthentication";
+
 import Home from "./pages/Home/Home";
 import About from "./pages/About/About";
+import Navbar from "./components/Navbar";
+import Footer from "./components/Footer";
 import Register from "./pages/Register/Register";
 import Login from "./pages/Login/Login";
+import load from "./assets/loading.gif";
+import CreatePost from "./pages/CreatePost/CreatePost";
+import DashBoard from "./pages/DashBoard/DashBoard";
+import EditPost from "./pages/EditPost/EditPost";
+import Post from "./pages/Post/Post";
 
 function App() {
-  const [authChecked, setAuthChecked] = useState(false);
+  const [user, setUser] = useState(undefined);
+  const { auth } = userAuthentication();
+
+  const loadingUser = user === undefined;
 
   useEffect(() => {
-    setTimeout(() => {
-      setAuthChecked(true);
-    }, 1000);
-  }, []);
+    onAuthStateChanged(auth, (user) => {
+      setUser(user);
+    });
+  }, [auth]);
 
-  if (!authChecked) {
-    return <div>Verificando autenticação...</div>;
+  if (loadingUser) {
+    return (
+      <div className="container load">
+        <img src={load} alt="gif loading user" width="120px" height="120px" />
+      </div>
+    );
   }
 
   return (
     <>
-      <BrowserRouter>
-        <Navbar />
-        <div className="container">
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/about" element={<About />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/login" element={<Login />} />
-          </Routes>
-        </div>
-        <Footer />
-      </BrowserRouter>
+      <AuthProvider value={{ user }}>
+        <BrowserRouter>
+          <Navbar value={user} />
+          <div className="container">
+            <Routes>
+              <Route path="/" element={<Home />}></Route>
+              <Route path="/about" element={<About />}></Route>
+              <Route path="/register" element={<Register />}></Route>
+              <Route path="/login" element={<Login />} />
+              <Route path="/post/create" element={<CreatePost />} />
+              <Route path="/dashboard" element={<DashBoard />} />
+              <Route path="/posts/:id" element={<Post />} />
+              <Route path="/posts/edit/:id" element={<EditPost />} />
+            </Routes>
+          </div>
+          <Footer />
+        </BrowserRouter>
+      </AuthProvider>
     </>
   );
 }
-
 export default App;
